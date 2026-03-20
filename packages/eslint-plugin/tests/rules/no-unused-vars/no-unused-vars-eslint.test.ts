@@ -2,11 +2,13 @@
 // Original Code: https://github.com/eslint/eslint/blob/eb76282e0a2db8aa10a3d5659f5f9237d9729121/tests/lib/rules/no-unused-vars.js
 // License      : https://github.com/eslint/eslint/blob/eb76282e0a2db8aa10a3d5659f5f9237d9729121/LICENSE
 
+// We try not to change this file, as every modification is added maintenance burden
+/* eslint-disable @typescript-eslint/internal/no-multiple-lines-of-errors, @typescript-eslint/internal/no-dynamic-tests */
+
 import type { TestCaseError } from '@typescript-eslint/rule-tester';
 import type { TSESTree } from '@typescript-eslint/utils';
 
 import { RuleTester } from '@typescript-eslint/rule-tester';
-import { AST_NODE_TYPES } from '@typescript-eslint/utils';
 
 import type { MessageIds } from '../../../src/rules/no-unused-vars';
 
@@ -88,13 +90,11 @@ function assignedError(
  * Returns an expected error for used-but-ignored variables.
  * @param varName The name of the variable
  * @param [additional] The additional text for the message data
- * @param [type] The node type (defaults to "Identifier")
  * @returns An expected error object
  */
 function usedIgnoredError(
   varName: string,
   additional = '',
-  type = AST_NODE_TYPES.Identifier,
 ): TestCaseError<MessageIds> {
   return {
     data: {
@@ -102,7 +102,6 @@ function usedIgnoredError(
       varName,
     },
     messageId: 'usedIgnoredVar',
-    type,
   };
 }
 
@@ -385,7 +384,25 @@ function f() {
     },
     {
       code: "import x from 'y';",
-      errors: [definedError('x')],
+      errors: [
+        {
+          data: {
+            action: 'defined',
+            additional: '',
+            varName: 'x',
+          },
+          messageId: 'unusedVar',
+          suggestions: [
+            {
+              data: {
+                varName: 'x',
+              },
+              messageId: 'removeUnusedImportDeclaration',
+              output: '',
+            },
+          ],
+        },
+      ],
       languageOptions: {
         parserOptions: { ecmaVersion: 6, sourceType: 'module' },
       },
@@ -1566,15 +1583,15 @@ foo*/
     {
       code: `
 let x = 0;
-x++, (x = 0);
+(x++, (x = 0));
       `,
-      errors: [{ ...assignedError('x'), column: 7, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 8, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2015 } },
     },
     {
       code: `
 let x = 0;
-x++, (x = 0);
+(x++, (x = 0));
 x = 3;
       `,
       errors: [{ ...assignedError('x'), column: 1, line: 4 }],
@@ -1583,25 +1600,25 @@ x = 3;
     {
       code: `
 let x = 0;
-x++, 0;
+(x++, 0);
       `,
-      errors: [{ ...assignedError('x'), column: 1, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 2, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2015 } },
     },
     {
       code: `
 let x = 0;
-0, x++;
+(0, x++);
       `,
-      errors: [{ ...assignedError('x'), column: 4, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 5, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2015 } },
     },
     {
       code: `
 let x = 0;
-0, (1, x++);
+(0, (1, x++));
       `,
-      errors: [{ ...assignedError('x'), column: 8, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 9, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2015 } },
     },
     {
@@ -1623,25 +1640,25 @@ foo = ((0, x++), 0);
     {
       code: `
 let x = 0;
-(x += 1), 0;
+((x += 1), 0);
       `,
-      errors: [{ ...assignedError('x'), column: 2, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 3, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2015 } },
     },
     {
       code: `
 let x = 0;
-0, (x += 1);
+(0, (x += 1));
       `,
-      errors: [{ ...assignedError('x'), column: 5, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 6, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2015 } },
     },
     {
       code: `
 let x = 0;
-0, (1, (x += 1));
+(0, (1, (x += 1)));
       `,
-      errors: [{ ...assignedError('x'), column: 9, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 10, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2015 } },
     },
     {
@@ -1665,15 +1682,15 @@ foo = ((0, (x += 1)), 0);
     {
       code: `
 let z = 0;
-(z = z + 1), (z = 2);
+((z = z + 1), (z = 2));
       `,
-      errors: [{ ...assignedError('z'), column: 15, line: 3 }],
+      errors: [{ ...assignedError('z'), column: 16, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2020 } },
     },
     {
       code: `
 let z = 0;
-(z = z + 1), (z = 2);
+((z = z + 1), (z = 2));
 z = 3;
       `,
       errors: [{ ...assignedError('z'), column: 1, line: 4 }],
@@ -1682,7 +1699,7 @@ z = 3;
     {
       code: `
 let z = 0;
-(z = z + 1), (z = 2);
+((z = z + 1), (z = 2));
 z = z + 3;
       `,
       errors: [{ ...assignedError('z'), column: 1, line: 4 }],
@@ -1691,17 +1708,17 @@ z = z + 3;
     {
       code: `
 let x = 0;
-0, (x = x + 1);
+(0, (x = x + 1));
       `,
-      errors: [{ ...assignedError('x'), column: 5, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 6, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2020 } },
     },
     {
       code: `
 let x = 0;
-(x = x + 1), 0;
+((x = x + 1), 0);
       `,
-      errors: [{ ...assignedError('x'), column: 2, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 3, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2020 } },
     },
     {
@@ -1723,9 +1740,9 @@ foo = ((x = x + 1), 0);
     {
       code: `
 let x = 0;
-0, (1, (x = x + 1));
+(0, (1, (x = x + 1)));
       `,
-      errors: [{ ...assignedError('x'), column: 9, line: 3 }],
+      errors: [{ ...assignedError('x'), column: 10, line: 3 }],
       languageOptions: { parserOptions: { ecmaVersion: 2020 } },
     },
     {
@@ -1972,7 +1989,11 @@ const _b = _a + 5;
       errors: [usedIgnoredError('_a', '. Used vars must not match /^_/u')],
       languageOptions: { parserOptions: { ecmaVersion: 6 } },
       options: [
-        { args: 'all', reportUsedIgnorePattern: true, varsIgnorePattern: '^_' },
+        {
+          args: 'all',
+          reportUsedIgnorePattern: true,
+          varsIgnorePattern: '^_',
+        },
       ],
     },
     {
@@ -1983,7 +2004,11 @@ foo(() => _a);
       errors: [usedIgnoredError('_a', '. Used vars must not match /^_/u')],
       languageOptions: { parserOptions: { ecmaVersion: 6 } },
       options: [
-        { args: 'all', reportUsedIgnorePattern: true, varsIgnorePattern: '^_' },
+        {
+          args: 'all',
+          reportUsedIgnorePattern: true,
+          varsIgnorePattern: '^_',
+        },
       ],
     },
     {
@@ -1994,7 +2019,11 @@ foo(() => _a);
       `,
       errors: [usedIgnoredError('_a', '. Used args must not match /^_/u')],
       options: [
-        { args: 'all', argsIgnorePattern: '^_', reportUsedIgnorePattern: true },
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          reportUsedIgnorePattern: true,
+        },
       ],
     },
     {
@@ -2010,7 +2039,10 @@ console.log(a + _b);
       ],
       languageOptions: { parserOptions: { ecmaVersion: 6 } },
       options: [
-        { destructuredArrayIgnorePattern: '^_', reportUsedIgnorePattern: true },
+        {
+          destructuredArrayIgnorePattern: '^_',
+          reportUsedIgnorePattern: true,
+        },
       ],
     },
     {
@@ -3449,7 +3481,11 @@ const _c = a + 5;
       `,
       languageOptions: { parserOptions: { ecmaVersion: 6 } },
       options: [
-        { args: 'all', reportUsedIgnorePattern: true, varsIgnorePattern: '^_' },
+        {
+          args: 'all',
+          reportUsedIgnorePattern: true,
+          varsIgnorePattern: '^_',
+        },
       ],
     },
     {
@@ -3459,7 +3495,11 @@ const _c = a + 5;
 })(5);
       `,
       options: [
-        { args: 'all', argsIgnorePattern: '^_', reportUsedIgnorePattern: true },
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          reportUsedIgnorePattern: true,
+        },
       ],
     },
     {
@@ -3469,7 +3509,10 @@ console.log(a + c);
       `,
       languageOptions: { parserOptions: { ecmaVersion: 6 } },
       options: [
-        { destructuredArrayIgnorePattern: '^_', reportUsedIgnorePattern: true },
+        {
+          destructuredArrayIgnorePattern: '^_',
+          reportUsedIgnorePattern: true,
+        },
       ],
     },
   ],

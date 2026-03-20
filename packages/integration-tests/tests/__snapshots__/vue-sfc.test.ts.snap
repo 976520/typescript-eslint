@@ -12,7 +12,6 @@ exports[`vue-sfc > eslint > should work successfully 1`] = `
       {
         "fatal": true,
         "message": "Parsing error: error TS5012: Cannot read file '/usr/linked/tsconfig.json': ENOENT: no such file or directory, open '/usr/linked/tsconfig.json'.",
-        "nodeType": null,
         "ruleId": null,
         "severity": 2,
       },
@@ -61,7 +60,7 @@ export default Vue.extend({
     "usedDeprecatedRules": [
       {
         "info": {
-          "availableUntil": "10.0.0",
+          "availableUntil": "11.0.0",
           "deprecatedSince": "8.53.0",
           "message": "Formatting rules are being moved out of ESLint core.",
           "replacedBy": [
@@ -98,7 +97,6 @@ export default Vue.extend({
       {
         "fatal": true,
         "message": "Parsing error: error TS5012: Cannot read file '/usr/linked/tsconfig.json': ENOENT: no such file or directory, open '/usr/linked/tsconfig.json'.",
-        "nodeType": null,
         "ruleId": null,
         "severity": 2,
       },
@@ -123,7 +121,7 @@ export default class Utility {
     "usedDeprecatedRules": [
       {
         "info": {
-          "availableUntil": "10.0.0",
+          "availableUntil": "11.0.0",
           "deprecatedSince": "8.53.0",
           "message": "Formatting rules are being moved out of ESLint core.",
           "replacedBy": [
@@ -160,7 +158,6 @@ export default class Utility {
       {
         "fatal": true,
         "message": "Parsing error: error TS5012: Cannot read file '/usr/linked/tsconfig.json': ENOENT: no such file or directory, open '/usr/linked/tsconfig.json'.",
-        "nodeType": null,
         "ruleId": null,
         "severity": 2,
       },
@@ -202,7 +199,7 @@ export default Vue.extend({
     "usedDeprecatedRules": [
       {
         "info": {
-          "availableUntil": "10.0.0",
+          "availableUntil": "11.0.0",
           "deprecatedSince": "8.53.0",
           "message": "Formatting rules are being moved out of ESLint core.",
           "replacedBy": [

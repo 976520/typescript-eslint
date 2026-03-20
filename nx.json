@@ -15,11 +15,11 @@
       }
     },
     {
-      "plugin": "@nx/vite/plugin",
+      "plugin": "@nx/vitest",
       "exclude": ["*"],
       "options": {
         "testTargetName": "test",
-        "typecheckTargetName": "vite:typecheck"
+        "typecheckTargetName": "vitest:typecheck"
       }
     }
   ],
@@ -40,7 +40,8 @@
       }
     },
     "version": {
-      "conventionalCommits": true
+      "conventionalCommits": true,
+      "preserveMatchingDependencyRanges": false
     }
   },
   "targetDefaults": {
@@ -69,7 +70,7 @@
         "runtime": "node -v"
       },
       {
-        "runtime": "yarn -v"
+        "runtime": "pnpm -v"
       },
       {
         "runtime": "echo $NETLIFY"
@@ -84,5 +85,8 @@
       "!{projectRoot}/vitest.config.mts"
     ]
   },
-  "nxCloudId": "60b38765e74d975e3faae5ad"
+  "nxCloudId": "60b38765e74d975e3faae5ad",
+  "sync": {
+    "applyChanges": true
+  }
 }

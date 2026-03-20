@@ -27,7 +27,8 @@ export interface RuleCreateAndOptions<
     context: Readonly<RuleContext<MessageIds, Options>>,
     optionsWithDefault: Readonly<Options>,
   ) => RuleListener;
-  defaultOptions: Readonly<Options>;
+  /** @deprecated Use meta.defaultOptions instead */
+  defaultOptions?: Readonly<Options>;
 }
 
 export interface RuleWithMeta<
@@ -36,6 +37,7 @@ export interface RuleWithMeta<
   Docs = unknown,
 > extends RuleCreateAndOptions<Options, MessageIds> {
   meta: RuleMetaData<MessageIds, Docs, Options>;
+  name?: string;
 }
 
 export interface RuleWithMetaAndName<
@@ -46,6 +48,15 @@ export interface RuleWithMetaAndName<
   meta: NamedCreateRuleMeta<MessageIds, Docs, Options>;
   name: string;
 }
+
+type RuleModuleWithName<
+  MessageIds extends string,
+  Options extends readonly unknown[] = [],
+  Docs = unknown,
+  ExtendedRuleListener extends RuleListener = RuleListener,
+> = RuleModule<MessageIds, Options, Docs, ExtendedRuleListener> & {
+  name: string;
+};
 
 /**
  * Creates reusable function to create rules with default options and docs URLs.
@@ -67,8 +78,8 @@ export function RuleCreator<PluginDocs = unknown>(
     ...rule
   }: Readonly<
     RuleWithMetaAndName<Options, MessageIds, PluginDocs>
-  >): RuleModule<MessageIds, Options, PluginDocs> {
-    return createRule<Options, MessageIds, PluginDocs>({
+  >): RuleModuleWithName<MessageIds, Options, PluginDocs> {
+    const ruleWithDocs = createRule<Options, MessageIds, PluginDocs>({
       meta: {
         ...meta,
         docs: {
@@ -76,8 +87,11 @@ export function RuleCreator<PluginDocs = unknown>(
           url: urlCreator(name),
         },
       },
+      name,
       ...rule,
     });
+
+    return ruleWithDocs as RuleModuleWithName<MessageIds, Options, PluginDocs>;
   };
 }
 
@@ -87,20 +101,30 @@ function createRule<
   PluginDocs = unknown,
 >({
   create,
+  // Keep accepting deprecated defaultOptions for backward compatibility.
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   defaultOptions,
   meta,
+  name,
 }: Readonly<RuleWithMeta<Options, MessageIds, PluginDocs>>): RuleModule<
   MessageIds,
   Options,
   PluginDocs
 > {
+  const resolvedDefaultOptions = (meta.defaultOptions ??
+    defaultOptions ??
+    []) as Readonly<Options>;
   return {
     create(context: Readonly<RuleContext<MessageIds, Options>>): RuleListener {
-      const optionsWithDefault = applyDefault(defaultOptions, context.options);
+      const optionsWithDefault = applyDefault(
+        resolvedDefaultOptions,
+        context.options,
+      );
       return create(context, optionsWithDefault);
     },
     defaultOptions,
     meta,
+    name,
   };
 }
 

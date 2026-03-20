@@ -22,8 +22,7 @@
     "**/node_modules/**",
     "packages/website/.docusaurus/**",
     "packages/website/build/**",
-    "packages/website/src/vendor/**",
-    "yarn.lock"
+    "packages/website/src/vendor/**"
   ],
   "dictionaries": [
     "typescript",
@@ -81,6 +80,7 @@
     "camelcase",
     "Cann",
     "canonicalize",
+    "Cavanaugh",
     "Cena",
     "Chaudhuri",
     "Cheung",
@@ -150,6 +150,7 @@
     "oxlint",
     "packagespecifier",
     "parameterised",
+    "parenthesization",
     "performant",
     "pluggable",
     "postprocess",

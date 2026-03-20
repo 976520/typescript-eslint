@@ -1,17 +1,8 @@
-import { RuleTester } from '@typescript-eslint/rule-tester';
-
 import rule from '../../src/rules/no-base-to-string';
-import { getFixturesRootDir } from '../RuleTester';
+import { createRuleTesterWithTypes, getFixturesRootDir } from '../RuleTester';
 
 const rootDir = getFixturesRootDir();
-const ruleTester = new RuleTester({
-  languageOptions: {
-    parserOptions: {
-      project: './tsconfig.json',
-      tsconfigRootDir: rootDir,
-    },
-  },
-});
+const ruleTester = createRuleTesterWithTypes();
 
 /**
  * ref: https://github.com/typescript-eslint/typescript-eslint/issues/11043
@@ -137,6 +128,21 @@ ruleTester.run('no-base-to-string', rule, {
     '({}).constructor().toString();',
     '(() => {}).toString();',
     '(function () {}).toString();',
+
+    `
+      declare const a: {
+        [Symbol.toPrimitive](): string;
+      };
+
+      \`\${a}\`;
+    `,
+    `
+      declare const a: {
+        valueOf(): string;
+      };
+
+      \`\${a}\`;
+    `,
 
     // variable toString() and template
     `
@@ -300,6 +306,86 @@ String(foo);
       `,
       options: [{ ignoredTypeNames: ['Foo'] }],
     },
+    {
+      code: `
+interface MyError<T> {}
+declare const error: MyError<number>;
+error.toString();
+      `,
+      options: [{ ignoredTypeNames: ['MyError'] }],
+    },
+    {
+      code: `
+type MyError<T> = {};
+declare const error: MyError<number>;
+error.toString();
+      `,
+      options: [{ ignoredTypeNames: ['MyError'] }],
+    },
+    {
+      code: `
+class MyError<T> {}
+declare const error: MyError<number>;
+error.toString();
+      `,
+      options: [{ ignoredTypeNames: ['MyError'] }],
+    },
+    {
+      code: `
+interface Animal {}
+interface Serializable {}
+interface Cat extends Animal, Serializable {}
+
+declare const whiskers: Cat;
+whiskers.toString();
+      `,
+      options: [{ ignoredTypeNames: ['Animal'] }],
+    },
+    {
+      code: `
+interface MyError extends Error {}
+
+declare const error: MyError;
+error.toString();
+      `,
+    },
+    {
+      code: `
+        class BaseError extends Error {
+          code?: string;
+        }
+
+        class Boom<T> extends BaseError {
+          details: T;
+        }
+
+        function bar<T>(error: Boom<T>) {
+          console.log(error.toString());
+        }
+      `,
+    },
+    {
+      code: `
+class UnknownBase {}
+class CustomError extends UnknownBase {}
+
+declare const err: CustomError;
+err.toString();
+      `,
+      options: [{ ignoredTypeNames: ['UnknownBase'] }],
+    },
+    {
+      code: `
+interface Animal {}
+interface Dog extends Animal {}
+interface Cat extends Animal {}
+
+declare const dog: Dog;
+declare const cat: Cat;
+cat.toString();
+      `,
+      options: [{ ignoredTypeNames: ['Animal'] }],
+    },
     `
 function String(value) {
   return value;
@@ -310,6 +396,32 @@ String(myValue);
     `
 import { String } from 'foo';
 String({});
+    `,
+    `
+class Foo {
+  toString(): string;
+  toString(options: { verbose: boolean }): string;
+  toString(options?: { verbose: boolean }) {
+    return 'Hello, world!';
+  }
+}
+'' + new Foo();
+    `,
+    `
+class Foo {
+  toString(prefix?: string): string {
+    return (prefix ?? '') + 'Hello, world!';
+  }
+}
+'' + new Foo();
+    `,
+    `
+declare module 'guid' {
+  export function toString(id: number): string;
+  export function toString(id: number, format: string): string;
+}
+import * as GUID from 'guid';
+GUID.toString(123);
     `,
     `
 ['foo', 'bar'].join('');
@@ -1317,6 +1429,7 @@ declare const foo: Bar & Foo;
       languageOptions: {
         parserOptions: {
           project: './tsconfig.noUncheckedIndexedAccess.json',
+          projectService: false,
           tsconfigRootDir: rootDir,
         },
       },
@@ -1567,6 +1680,7 @@ declare const foo: Bar & Foo;
       languageOptions: {
         parserOptions: {
           project: './tsconfig.noUncheckedIndexedAccess.json',
+          projectService: false,
           tsconfigRootDir: rootDir,
         },
       },
@@ -1588,7 +1702,50 @@ declare const foo: Bar & Foo;
         },
       ],
     },
+    {
+      code: `
+        declare const a:
+          | {
+              [Symbol.toPrimitive](): string;
+            }
+          | {
+              other: true;
+            };
 
+        \`\${a}\`;
+      `,
+      errors: [
+        {
+          data: {
+            certainty: 'may',
+            name: 'a',
+          },
+          messageId: 'baseToString',
+        },
+      ],
+    },
+    {
+      code: `
+        declare const a:
+          | {
+              valueOf(): string;
+            }
+          | {
+              other: true;
+            };
+
+        \`\${a}\`;
+      `,
+      errors: [
+        {
+          data: {
+            certainty: 'may',
+            name: 'a',
+          },
+          messageId: 'baseToString',
+        },
+      ],
+    },
     {
       code: `
         [{}, {}].toString();
@@ -1817,6 +1974,7 @@ declare const foo: Bar & Foo;
       languageOptions: {
         parserOptions: {
           project: './tsconfig.noUncheckedIndexedAccess.json',
+          projectService: false,
           tsconfigRootDir: rootDir,
         },
       },
@@ -2067,6 +2225,7 @@ declare const foo: Bar & Foo;
       languageOptions: {
         parserOptions: {
           project: './tsconfig.noUncheckedIndexedAccess.json',
+          projectService: false,
           tsconfigRootDir: rootDir,
         },
       },
@@ -2238,6 +2397,79 @@ v.join();
             name: 'v',
           },
           messageId: 'baseArrayJoin',
+        },
+      ],
+    },
+    {
+      code: `
+interface Dog extends Animal {}
+
+declare const labrador: Dog;
+labrador.toString();
+      `,
+      errors: [
+        {
+          data: {
+            certainty: 'will',
+            name: 'labrador',
+          },
+          messageId: 'baseToString',
+        },
+      ],
+    },
+    {
+      code: `
+interface A extends B {}
+interface B extends A {}
+
+declare const a: A;
+a.toString();
+      `,
+      errors: [
+        {
+          data: {
+            certainty: 'will',
+            name: 'a',
+          },
+          messageId: 'baseToString',
+        },
+      ],
+    },
+    {
+      code: `
+        interface Base {}
+        interface Left extends Base {}
+        interface Right extends Base {}
+        interface Diamond extends Left, Right {}
+
+        declare const d: Diamond;
+        d.toString();
+      `,
+      errors: [
+        {
+          data: {
+            certainty: 'will',
+            name: 'd',
+          },
+          messageId: 'baseToString',
+        },
+      ],
+    },
+    // Covers the `!declarations?.length` branch — mapped types have
+    // no declarations for their synthesized properties.
+    {
+      code: `
+        type Mapped = { [K in 'toString']: () => string };
+        declare const x: Mapped;
+        '' + x;
+      `,
+      errors: [
+        {
+          data: {
+            certainty: 'will',
+            name: 'x',
+          },
+          messageId: 'baseToString',
         },
       ],
     },

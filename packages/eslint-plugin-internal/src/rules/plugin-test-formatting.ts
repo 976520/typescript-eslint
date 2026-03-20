@@ -3,8 +3,14 @@ import type { TSESTree } from '@typescript-eslint/utils';
 import prettier from '@prettier/sync';
 import { getContextualType } from '@typescript-eslint/type-utils';
 import { AST_NODE_TYPES, ESLintUtils } from '@typescript-eslint/utils';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import { createRule } from '../util';
+import { createRule } from '../util/index.js';
+
+// Replace with import.meta.dirname when minimum node version supports it
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /*
 The strings that are used for eslint plugins will not be checked for formatting.
@@ -145,6 +151,8 @@ export default createRule<Options, MessageIds>({
         properties: {
           formatWithPrettier: {
             type: 'boolean',
+            description:
+              'Whether to enforce formatting of code snippets using Prettier.',
           },
         },
       },
@@ -284,6 +292,10 @@ export default createRule<Options, MessageIds>({
 
       const text = literal.quasis[0].value.cooked;
 
+      if (text == null) {
+        return;
+      }
+
       if (literal.loc.end.line === literal.loc.start.line) {
         // don't use template strings for single line tests
         return context.report({
@@ -411,7 +423,7 @@ export default createRule<Options, MessageIds>({
 
       if (isNoFormatTagged) {
         if (literal.parent.type === AST_NODE_TYPES.TaggedTemplateExpression) {
-          checkForUnnecesaryNoFormat(code, literal.parent);
+          checkForUnnecessaryNoFormat(code, literal.parent);
         }
         return;
       }
@@ -447,10 +459,14 @@ export default createRule<Options, MessageIds>({
       return tag.type === AST_NODE_TYPES.Identifier && tag.name === 'noFormat';
     }
 
-    function checkForUnnecesaryNoFormat(
-      text: string,
+    function checkForUnnecessaryNoFormat(
+      text: string | null,
       expr: TSESTree.TaggedTemplateExpression,
     ): void {
+      if (text == null) {
+        return;
+      }
+
       const formatted = getCodeFormatted(text);
       if (formatted === text) {
         context.report({
@@ -472,7 +488,7 @@ export default createRule<Options, MessageIds>({
     ): void {
       if (isNoFormatTemplateTag(expr.tag)) {
         const { cooked } = expr.quasi.quasis[0].value;
-        checkForUnnecesaryNoFormat(cooked, expr);
+        checkForUnnecessaryNoFormat(cooked, expr);
       } else {
         return;
       }
@@ -553,10 +569,6 @@ export default createRule<Options, MessageIds>({
         AST_NODE_TYPES.ArrayExpression,
         AST_NODE_TYPES.ObjectExpression,
       ].join(' > ')]: checkInvalidTest,
-      // special case for our batchedSingleLineTests utility
-      'CallExpression[callee.name = "batchedSingleLineTests"] > ObjectExpression':
-        checkInvalidTest,
-
       /**
        * generic, type-aware handling for any old object
        * this is a fallback to handle random variables people declare or object

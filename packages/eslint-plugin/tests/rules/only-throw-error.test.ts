@@ -1,16 +1,7 @@
-import { RuleTester } from '@typescript-eslint/rule-tester';
-
 import rule from '../../src/rules/only-throw-error';
-import { getFixturesRootDir } from '../RuleTester';
+import { createRuleTesterWithTypes } from '../RuleTester';
 
-const ruleTester = new RuleTester({
-  languageOptions: {
-    parserOptions: {
-      project: './tsconfig.json',
-      tsconfigRootDir: getFixturesRootDir(),
-    },
-  },
-});
+const ruleTester = createRuleTesterWithTypes();
 
 ruleTester.run('only-throw-error', rule, {
   valid: [
@@ -186,6 +177,19 @@ throw new Map();
           allow: [{ from: 'package', name: 'ErrorLike', package: 'errors' }],
           allowThrowingAny: false,
           allowThrowingUnknown: false,
+        },
+      ],
+    },
+    {
+      code: `
+function func<T1, T2>() {
+  let err: Promise<T1> | Promise<T2>;
+  throw err;
+}
+      `,
+      options: [
+        {
+          allow: ['Promise'],
         },
       ],
     },
@@ -610,6 +614,24 @@ function fun<T extends number>(t: T): void {
       errors: [
         {
           messageId: 'object',
+        },
+      ],
+    },
+    {
+      code: `
+function func<T1, T2>() {
+  let err: Promise<T1> | Promise<T2> | void;
+  throw err;
+}
+      `,
+      errors: [
+        {
+          messageId: 'object',
+        },
+      ],
+      options: [
+        {
+          allow: ['Promise'],
         },
       ],
     },

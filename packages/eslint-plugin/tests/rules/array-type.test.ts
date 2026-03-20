@@ -1649,36 +1649,11 @@ function fooFunction(foo: ArrayClass<string>[]) {
       output: 'let x: any[];',
     },
     {
-      code: 'let x: Array<>;',
-      errors: [
-        {
-          column: 8,
-          data: { className: 'Array', readonlyPrefix: '', type: 'any' },
-          line: 1,
-          messageId: 'errorStringArray',
-        },
-      ],
-      options: [{ default: 'array' }],
-      output: 'let x: any[];',
-    },
-    {
       code: 'let x: Array;',
       errors: [
         {
           column: 8,
           data: { className: 'Array', readonlyPrefix: '', type: 'any' },
-          line: 1,
-          messageId: 'errorStringArraySimple',
-        },
-      ],
-      options: [{ default: 'array-simple' }],
-      output: 'let x: any[];',
-    },
-    {
-      code: 'let x: Array<>;',
-      errors: [
-        {
-          column: 8,
           line: 1,
           messageId: 'errorStringArraySimple',
         },
@@ -1996,9 +1971,7 @@ interface FooInterface {
 // -- eslint rule tester is not working with multi-pass
 // https://github.com/eslint/eslint/issues/11187
 describe('array-type (nested)', () => {
-  const linter = new TSESLint.Linter({ configType: 'eslintrc' });
-  linter.defineRule('array-type', rule);
-  linter.defineParser('@typescript-eslint/parser', parser);
+  const linter = new TSESLint.Linter({});
 
   describe('should deeply fix correctly', () => {
     function testOutput(
@@ -2011,9 +1984,14 @@ describe('array-type (nested)', () => {
         const result = linter.verifyAndFix(
           code,
           {
-            parser: '@typescript-eslint/parser',
+            languageOptions: {
+              parser,
+            },
+            plugins: {
+              '@typescript-eslint': { rules: { 'array-type': rule } },
+            },
             rules: {
-              'array-type': [
+              '@typescript-eslint/array-type': [
                 2,
                 { default: defaultOption, readonly: readonlyOption },
               ],
@@ -2125,7 +2103,6 @@ type BrokenArray = {
       'let yy: number[][] = [[4, 5], [6]];',
       'let yy: Array<Array<number>> = [[4, 5], [6]];',
     );
-    testOutput('array', 'let a: Array<>[] = [];', 'let a: any[][] = [];');
     testOutput('array', 'let a: Array<any[]> = [];', 'let a: any[][] = [];');
     testOutput(
       'array',
@@ -2133,11 +2110,6 @@ type BrokenArray = {
       'let a: any[][][] = [];',
     );
 
-    testOutput(
-      'generic',
-      'let a: Array<>[] = [];',
-      'let a: Array<Array<>> = [];',
-    );
     testOutput(
       'generic',
       'let a: Array<any[]> = [];',

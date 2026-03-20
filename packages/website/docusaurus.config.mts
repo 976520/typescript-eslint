@@ -11,6 +11,7 @@ import npm2yarnPlugin from '@docusaurus/remark-plugin-npm2yarn';
 import { version } from '@typescript-eslint/parser/package.json';
 
 import { blogFooter } from './plugins/blog-footer';
+import { faqData } from './plugins/faq-data';
 import { generatedRuleDocs } from './plugins/generated-rule-docs';
 import { rulesMeta } from './rulesMeta';
 
@@ -49,6 +50,7 @@ const presetClassicOptions: PresetClassicOptions = {
 };
 
 const pluginContentDocsOptions: PluginContentDocsOptions = {
+  beforeDefaultRemarkPlugins: [faqData],
   breadcrumbs: false,
   editUrl: `${githubUrl}/edit/main/packages/website/`,
   id: 'base-docs',
@@ -351,6 +353,9 @@ const redirects: PluginRedirectOptions = {
 
 const config: Config = {
   baseUrl: '/',
+  future: {
+    experimental_faster: true,
+  },
   tagline: 'Powerful static analysis for JavaScript and TypeScript.',
   title: 'typescript-eslint',
   url: 'https://typescript-eslint.io',
@@ -368,32 +373,34 @@ const config: Config = {
   organizationName: 'typescript-eslint',
   plugins: [
     './plugins/recent-blog-posts/index.ts',
-    ...['ast-spec', 'project-service', 'tsconfig-utils', 'type-utils'].map(
-      packageName => [
-        'docusaurus-plugin-typedoc',
-        {
-          entryPoints: [`../${packageName}/src/index.ts`],
-          enumMembersFormat: 'table',
-          exclude: '**/*.d.ts',
-          excludeExternals: true,
-          groupOrder: ['Functions', 'Variables', '*'],
-          hidePageTitle: true,
-          id: `typedoc-generated-${packageName}`,
-          indexFormat: 'table',
-          out: `../../docs/packages/${packageName}/generated`,
-          outputFileStrategy: 'modules',
-          parametersFormat: 'table',
-          plugin: [
-            require.resolve('./tools/typedoc-plugin-no-inherit-fork.mjs'),
-          ],
-          propertiesFormat: 'table',
-          readme: 'none',
-          tsconfig: `../${packageName}/tsconfig.json`,
-          typeDeclarationFormat: 'table',
-          useCodeBlocks: true,
-        },
-      ],
-    ),
+    ...[
+      'ast-spec',
+      'project-service',
+      'rule-schema-to-typescript-types',
+      'tsconfig-utils',
+      'type-utils',
+    ].map(packageName => [
+      'docusaurus-plugin-typedoc',
+      {
+        entryPoints: [`../${packageName}/src/index.ts`],
+        enumMembersFormat: 'table',
+        exclude: '**/*.d.ts',
+        excludeExternals: true,
+        groupOrder: ['Functions', 'Variables', '*'],
+        hidePageTitle: true,
+        id: `typedoc-generated-${packageName}`,
+        indexFormat: 'table',
+        out: `../../docs/packages/${packageName}/generated`,
+        outputFileStrategy: 'modules',
+        parametersFormat: 'table',
+        plugin: [require.resolve('./tools/typedoc-plugin-no-inherit-fork.mjs')],
+        propertiesFormat: 'table',
+        readme: 'none',
+        tsconfig: `../${packageName}/tsconfig.json`,
+        typeDeclarationFormat: 'table',
+        useCodeBlocks: true,
+      },
+    ]),
     require.resolve('./webpack.plugin'),
     ['@docusaurus/plugin-content-docs', pluginContentDocsOptions],
     ['@docusaurus/plugin-pwa', pluginPwaOptions],

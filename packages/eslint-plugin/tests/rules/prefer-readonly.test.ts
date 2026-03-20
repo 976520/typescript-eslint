@@ -1,17 +1,7 @@
-import { RuleTester } from '@typescript-eslint/rule-tester';
-
 import rule from '../../src/rules/prefer-readonly';
-import { getFixturesRootDir } from '../RuleTester';
+import { createRuleTesterWithTypes } from '../RuleTester';
 
-const rootDir = getFixturesRootDir();
-const ruleTester = new RuleTester({
-  languageOptions: {
-    parserOptions: {
-      project: './tsconfig.json',
-      tsconfigRootDir: rootDir,
-    },
-  },
-});
+const ruleTester = createRuleTesterWithTypes();
 
 ruleTester.run('prefer-readonly', rule, {
   valid: [
@@ -742,8 +732,65 @@ class Foo {
         accessor #acc = 3;
       }
     `,
+    `
+      class Test1 {
+        // should not report
+        private prop = 7;
+
+        foo() {
+          this['prop'] = 10;
+        }
+      }
+
+      class Test3 {
+        // should not report
+        private 'prop' = 7;
+
+        foo() {
+          this.prop = 10;
+        }
+      }
+    `,
   ],
   invalid: [
+    {
+      code: `
+        class Test2 {
+          // should report
+          private [Symbol.iterator] = 7;
+        }
+
+        class Test4 {
+          // should report
+          private [1] = 7;
+        }
+      `,
+      errors: [
+        {
+          data: {
+            name: 'Symbol.iterator',
+          },
+          messageId: 'preferReadonly',
+        },
+        {
+          data: {
+            name: '1',
+          },
+          messageId: 'preferReadonly',
+        },
+      ],
+      output: `
+        class Test2 {
+          // should report
+          private readonly [Symbol.iterator] = 7;
+        }
+
+        class Test4 {
+          // should report
+          private readonly [1] = 7;
+        }
+      `,
+    },
     {
       code: `
         class TestIncorrectlyModifiableStatic {

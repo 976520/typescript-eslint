@@ -91,22 +91,20 @@ export default createRule<Options, MessageIds>({
     function isSymbolTypeBased(
       symbol: ts.Symbol | undefined,
     ): boolean | undefined {
-      if (!symbol) {
+      if (!symbol || checker.isUnknownSymbol(symbol)) {
         return undefined;
       }
-
-      const aliasedSymbol = tsutils.isSymbolFlagSet(
-        symbol,
-        ts.SymbolFlags.Alias,
-      )
-        ? checker.getAliasedSymbol(symbol)
-        : symbol;
-
-      if (checker.isUnknownSymbol(aliasedSymbol)) {
-        return undefined;
+      if (
+        symbol.getDeclarations()?.some(ts.isTypeOnlyImportOrExportDeclaration)
+      ) {
+        return true;
       }
-
-      return !(aliasedSymbol.flags & ts.SymbolFlags.Value);
+      if (tsutils.isSymbolFlagSet(symbol, ts.SymbolFlags.Value)) {
+        return false;
+      }
+      return tsutils.isSymbolFlagSet(symbol, ts.SymbolFlags.Alias)
+        ? isSymbolTypeBased(checker.getImmediateAliasedSymbol(symbol))
+        : true;
     }
 
     return {

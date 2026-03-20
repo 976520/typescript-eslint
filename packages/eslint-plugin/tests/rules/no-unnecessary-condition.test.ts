@@ -1,6 +1,6 @@
 import type { InvalidTestCase } from '@typescript-eslint/rule-tester';
 
-import { noFormat, RuleTester } from '@typescript-eslint/rule-tester';
+import { noFormat } from '@typescript-eslint/rule-tester';
 import * as path from 'node:path';
 
 import type {
@@ -9,28 +9,21 @@ import type {
 } from '../../src/rules/no-unnecessary-condition';
 
 import rule from '../../src/rules/no-unnecessary-condition';
-import { getFixturesRootDir } from '../RuleTester';
+import { createRuleTesterWithTypes, getFixturesRootDir } from '../RuleTester';
 
-const rootPath = getFixturesRootDir();
-
-const ruleTester = new RuleTester({
-  languageOptions: {
-    parserOptions: {
-      project: './tsconfig.json',
-      tsconfigRootDir: rootPath,
-    },
-  },
-});
+const rootDir = getFixturesRootDir();
+const ruleTester = createRuleTesterWithTypes();
 
 const optionsWithExactOptionalPropertyTypes = {
   project: './tsconfig.exactOptionalPropertyTypes.json',
-  tsconfigRootDir: rootPath,
+  projectService: false,
+  tsconfigRootDir: rootDir,
 };
 
 const optionsWithNoUncheckedIndexedAccess = {
   project: './tsconfig.noUncheckedIndexedAccess.json',
   projectService: false,
-  tsconfigRootDir: getFixturesRootDir(),
+  tsconfigRootDir: rootDir,
 };
 
 const necessaryConditionTest = (condition: string): string => `
@@ -506,6 +499,24 @@ for (; true; ) {}
     },
     {
       code: `
+for (; true; ) {}
+      `,
+      options: [{ allowConstantLoopConditions: 'only-allowed-literals' }],
+    },
+    {
+      code: `
+for (; 0; ) {}
+      `,
+      options: [{ allowConstantLoopConditions: 'only-allowed-literals' }],
+    },
+    {
+      code: `
+do {} while (0);
+      `,
+      options: [{ allowConstantLoopConditions: 'only-allowed-literals' }],
+    },
+    {
+      code: `
 do {} while (true);
       `,
       options: [{ allowConstantLoopConditions: 'always' }],
@@ -883,7 +894,7 @@ if (x) {
       `,
       languageOptions: {
         parserOptions: {
-          tsconfigRootDir: path.join(rootPath, 'unstrict'),
+          tsconfigRootDir: path.join(rootDir, 'unstrict'),
         },
       },
       options: [
@@ -2084,27 +2095,6 @@ do {} while (test);
     },
     {
       code: `
-for (; true; ) {}
-      `,
-      errors: [{ column: 8, line: 2, messageId: 'alwaysTruthy' }],
-      options: [{ allowConstantLoopConditions: 'only-allowed-literals' }],
-    },
-    {
-      code: `
-for (; 0; ) {}
-      `,
-      errors: [{ column: 8, line: 2, messageId: 'alwaysFalsy' }],
-      options: [{ allowConstantLoopConditions: 'only-allowed-literals' }],
-    },
-    {
-      code: `
-do {} while (0);
-      `,
-      errors: [{ column: 14, line: 2, messageId: 'alwaysFalsy' }],
-      options: [{ allowConstantLoopConditions: 'only-allowed-literals' }],
-    },
-    {
-      code: `
 let shouldRun = true;
 
 while ((shouldRun = true)) {}
@@ -3059,7 +3049,7 @@ if (x) {
       ],
       languageOptions: {
         parserOptions: {
-          tsconfigRootDir: path.join(rootPath, 'unstrict'),
+          tsconfigRootDir: path.join(rootDir, 'unstrict'),
         },
       },
     },

@@ -2,7 +2,7 @@ import type { ESLintPluginDocs } from '@typescript-eslint/eslint-plugin/use-at-y
 import type * as mdast from 'mdast';
 import type { MdxJsxFlowElement } from 'mdast-util-mdx';
 
-import { compile } from '@typescript-eslint/rule-schema-to-typescript-types';
+import { schemaToTypes } from '@typescript-eslint/rule-schema-to-typescript-types';
 import { EOL } from 'node:os';
 import * as path from 'node:path';
 import prettier from 'prettier';
@@ -32,7 +32,7 @@ const PRETTIER_CONFIG_PATH = path.resolve(
   '..',
   '.prettierrc.json',
 );
-const prettierConfig = (async () => {
+const lazyPrettierConfig = (async () => {
   const filepath = path.join(__dirname, 'file.ts');
   const config = await prettier.resolveConfig(filepath, {
     config: PRETTIER_CONFIG_PATH,
@@ -85,7 +85,7 @@ export async function insertNewRuleReferences(
               lang: 'js',
               meta: 'title="eslint.config.mjs"',
               type: 'code',
-              value: `export default tseslint.config(${eslintConfig});`,
+              value: `export default defineConfig(${eslintConfig});`,
             },
           ],
           name: 'TabItem',
@@ -149,6 +149,7 @@ export async function insertNewRuleReferences(
       'This rule is not configurable.',
     );
   } else if (!COMPLICATED_RULE_OPTIONS.has(page.file.stem)) {
+    const prettierConfig = await lazyPrettierConfig;
     page.spliceChildren(
       page.headingIndices.options + 1,
       0,
@@ -159,11 +160,11 @@ export async function insertNewRuleReferences(
         lang: 'ts',
         type: 'code',
         value: [
-          await compile(page.rule.meta.schema, prettierConfig),
           await prettier.format(
-            getRuleDefaultOptions(page),
-            await prettierConfig,
+            schemaToTypes(page.rule.meta.schema),
+            prettierConfig,
           ),
+          await prettier.format(getRuleDefaultOptions(page), prettierConfig),
         ]
           .join(EOL)
           .trim(),
@@ -185,6 +186,8 @@ function linkToConfigsForObject(docs: ESLintPluginDocs): string {
 }
 
 function getRuleDefaultOptions(page: RuleDocsPage): string {
+  // Keep accepting deprecated defaultOptions for backward compatibility.
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const defaults = JSON.stringify(page.rule.defaultOptions);
   const recommended = page.rule.meta.docs.recommended;
 

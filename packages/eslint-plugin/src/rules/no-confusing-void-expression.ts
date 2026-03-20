@@ -1,4 +1,8 @@
-import type { TSESLint, TSESTree } from '@typescript-eslint/utils';
+import type {
+  NodeWithParent,
+  TSESLint,
+  TSESTree,
+} from '@typescript-eslint/utils';
 
 import { AST_NODE_TYPES } from '@typescript-eslint/utils';
 import * as tsutils from 'ts-api-utils';
@@ -107,7 +111,6 @@ export default createRule<Options, MessageId>({
 
   create(context, [options]) {
     const services = getParserServices(context);
-    const checker = services.program.getTypeChecker();
 
     return {
       'AwaitExpression, CallExpression, TaggedTemplateExpression'(
@@ -300,8 +303,8 @@ export default createRule<Options, MessageId>({
      * @param node The void expression node to check.
      * @returns Invalid ancestor node if it was found. `null` otherwise.
      */
-    function findInvalidAncestor(node: TSESTree.Node): InvalidAncestor | null {
-      const parent = nullThrows(node.parent, NullThrowsReasons.MissingParent);
+    function findInvalidAncestor(node: NodeWithParent): InvalidAncestor | null {
+      const parent = node.parent;
       if (
         parent.type === AST_NODE_TYPES.SequenceExpression &&
         node !== parent.expressions[parent.expressions.length - 1]
@@ -365,17 +368,14 @@ export default createRule<Options, MessageId>({
     /** Checks whether the return statement is the last statement in a function body. */
     function isFinalReturn(node: TSESTree.ReturnStatement): boolean {
       // the parent must be a block
-      const block = nullThrows(node.parent, NullThrowsReasons.MissingParent);
+      const block = node.parent;
       if (block.type !== AST_NODE_TYPES.BlockStatement) {
         // e.g. `if (cond) return;` (not in a block)
         return false;
       }
 
       // the block's parent must be a function
-      const blockParent = nullThrows(
-        block.parent,
-        NullThrowsReasons.MissingParent,
-      );
+      const blockParent = block.parent;
       if (
         ![
           AST_NODE_TYPES.ArrowFunctionExpression,
@@ -448,19 +448,18 @@ export default createRule<Options, MessageId>({
       //   - Otherwise, check if the function is a function-expression or an arrow-function.
       //   -   If it is, get its contextual type and bail if we cannot.
       //   - Return based on whether the contextual type includes `void` or not
-
-      const functionTSNode = services.esTreeNodeToTSNodeMap.get(functionNode);
-
-      if (functionTSNode.type) {
-        const returnType = checker.getTypeFromTypeNode(functionTSNode.type);
+      if (functionNode.returnType) {
+        const returnType = services.getTypeFromTypeNode(
+          functionNode.returnType.typeAnnotation,
+        );
 
         return tsutils
           .unionConstituents(returnType)
           .some(tsutils.isIntrinsicVoidType);
       }
 
-      if (ts.isExpression(functionTSNode)) {
-        const functionType = checker.getContextualType(functionTSNode);
+      if (functionNode.type !== AST_NODE_TYPES.FunctionDeclaration) {
+        const functionType = services.getContextualType(functionNode);
 
         if (functionType) {
           return tsutils
